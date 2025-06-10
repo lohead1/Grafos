@@ -249,19 +249,7 @@ public class GraphLink<E extends Comparable<E>> {
     }
 	//ejercicio 2
 	public ListaEnlazada<E> shortPath(E origen, E destino) {
-	    // Este método encuentra el camino más corto en número de aristas (no en peso)
-
-	    // 1. Es exactamente igual al BFS clásico como bfsPath()
-	    //    - Pero no toma en cuenta pesos, solo conexiones (cantidad mínima de saltos)
-
-	    // 2. Se usa BFS:
-	    //    - Cola (QueueLink<Vertex<E>>)
-	    //    - Visitados (ListaEnlazada<Vertex<E>>)
-	    //    - Padres (ListaEnlazada<ParPadre<E>>)
-
-	    // 3. Cuando llegas al destino, reconstruyes el camino como en bfsPath()
-
-	    // 4. Devuelves ListaEnlazada<E> con el recorrido
+	   
         return bfsPath(origen, destino);
 	}
 	
@@ -400,7 +388,172 @@ public class GraphLink<E extends Comparable<E>> {
         // 6. Retornar el stack con el camino óptimo
         return camino;
 	}
+	/*
+	//ejercicio5
+	public String identificarTipoGrafo() {
+	    if (isDirected) {
+	        return "Este análisis solo es para grafos no dirigidos.";
+	    }
 
+	    int n = listVertex.length();
+	    if (n == 0) return "El grafo está vacío";
+
+	    // Contar el grado de cada vértice
+	    ListaEnlazada<Integer> grados = new ListaEnlazada<>();
+	    for (Vertex<E> v : listVertex) {
+	        grados.insertLast(v.listAdj.length());
+	    }
+
+	    // Calcular suma total de grados (para validar completo, ciclos, etc.)
+	    int sumaGrados = 0;
+	    int gradoMax = 0;
+	    int gradoMin = Integer.MAX_VALUE;
+
+	    for (Integer g : grados) {
+	        sumaGrados += g;
+	        if (g > gradoMax) gradoMax = g;
+	        if (g < gradoMin) gradoMin = g;
+	    }
+
+	    // COMPLETO: todos conectados con todos -> cada vértice tiene grado (n-1)
+	    if (gradosTodosIguales(grados, n - 1)) {
+	        return "Grafo Completo K" + n;
+	    }
+
+	    // CICLO: todos los nodos tienen grado 2
+	    if (gradosTodosIguales(grados, 2)) {
+	        return "Grafo Ciclo C" + n;
+	    }
+
+	    // CAMINO: dos nodos de grado 1, el resto de grado 2
+	    int countGrado1 = 0;
+	    int countGrado2 = 0;
+	    for (Integer g : grados) {
+	        if (g == 1) countGrado1++;
+	        else if (g == 2) countGrado2++;
+	    }
+	    if (countGrado1 == 2 && countGrado2 == n - 2) {
+	        return "Grafo Camino P" + n;
+	    }
+
+	    // RUEDA: un nodo de grado (n-1), el resto de grado 3 (ya que forman ciclo + conexión central)
+	    int countCentro = 0;
+	    int countAnillo = 0;
+	    for (Integer g : grados) {
+	        if (g == n - 1) countCentro++;
+	        else if (g == 3) countAnillo++;
+	    }
+	    if (countCentro == 1 && countAnillo == n - 1) {
+	        return "Grafo Rueda W" + n;
+	    }
+
+	    // Si no es ningún tipo anterior, devolvemos los grados
+	    StringBuilder gradosInfo = new StringBuilder("Grados de nodos: ");
+	    int i = 1;
+	    for (Integer g : grados) {
+	        gradosInfo.append("G").append(i).append("=").append(g).append(" ");
+	        i++;
+	    }
+	    return gradosInfo.toString();
+	}
+
+	// Función auxiliar para verificar si todos los grados son iguales a un valor
+	private boolean gradosTodosIguales(ListaEnlazada<Integer> grados, int valor) {
+	    for (Integer g : grados) {
+	        if (g != valor) return false;
+	    }
+	    return true;
+	}
+	
+	public String getRepresentacionFormal() {
+	    StringBuilder sb = new StringBuilder();
+
+	    sb.append("Vértices:\n");
+	    for (Vertex<E> v : listVertex) {
+	        sb.append(v.getData()).append(" ");
+	    }
+
+	    sb.append("\n\nAristas:\n");
+	    ListaEnlazada<String> aristasIncluidas = new ListaEnlazada<>();
+
+	    for (Vertex<E> v : listVertex) {
+	        for (Edge<E> e : v.listAdj) {
+	            E origen = v.getData();
+	            E destino = e.getrefDest().getData();
+	            String arista = "(" + origen + ", " + destino + ")";
+	            String aristaInvertida = "(" + destino + ", " + origen + ")";
+
+	            // Evitar duplicados en grafos no dirigidos
+	            if (!aristasIncluidas.contains(arista) && !aristasIncluidas.contains(aristaInvertida)) {
+	                sb.append(arista).append(" ");
+	                aristasIncluidas.insertLast(arista);
+	            }
+	        }
+	    }
+
+	    return sb.toString();
+	}
+	public String getListaAdyacencias() {
+	    StringBuilder sb = new StringBuilder();
+
+	    sb.append("Lista de Adyacencias:\n");
+	    for (Vertex<E> v : listVertex) {
+	        sb.append(v.getData()).append(": ");
+	        for (Edge<E> e : v.listAdj) {
+	            sb.append(e.getrefDest().getData()).append(" ");
+	        }
+	        sb.append("\n");
+	    }
+
+	    return sb.toString();
+	}
+	
+	public String getMatrizAdyacencia() {
+	    int n = listVertex.length();
+	    Vertex<E>[] vertices = new Vertex[n];
+	    int index = 0;
+
+	    for (Vertex<E> v : listVertex) {
+	        vertices[index++] = v;
+	    }
+
+	    int[][] matriz = new int[n][n];
+
+	    // Llenar matriz con 1 si están conectados
+	    for (int i = 0; i < n; i++) {
+	        for (Edge<E> e : vertices[i].listAdj) {
+	            Vertex<E> destino = e.getrefDest();
+
+	            for (int j = 0; j < n; j++) {
+	                if (vertices[j].equals(destino)) {
+	                    matriz[i][j] = 1;
+	                    break;
+	                }
+	            }
+	        }
+	    }
+
+	    // Construir string con la matriz
+	    StringBuilder sb = new StringBuilder();
+	    sb.append("Matriz de Adyacencia:\n   ");
+
+	    // Cabecera de columnas
+	    for (int i = 0; i < n; i++) {
+	        sb.append(vertices[i].getData()).append(" ");
+	    }
+	    sb.append("\n");
+
+	    for (int i = 0; i < n; i++) {
+	        sb.append(vertices[i].getData()).append("  ");
+	        for (int j = 0; j < n; j++) {
+	            sb.append(matriz[i][j]).append(" ");
+	        }
+	        sb.append("\n");
+	    }
+
+	    return sb.toString();
+	}
+	*/
 	public String toString() {
 		return this.listVertex.toString();
 	}

@@ -17,6 +17,9 @@ public class Edge<E> implements Comparable<Edge<E>>{
 	public Vertex<E> getrefDest() {
         return refDest;
     }
+	public int getWeight(){
+		return weight;
+	}
 	//si dos aristas van en el mismo vertice destino
 	public boolean equals(Object o) {
 		if (o instanceof Edge<?>) {
