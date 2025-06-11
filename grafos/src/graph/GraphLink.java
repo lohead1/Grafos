@@ -69,10 +69,10 @@ public class GraphLink<E extends Comparable<E>> {
 		Vertex<E> destino = searchVertexObject(verDes);
 
 		if (origen == null) {
-	        throw new IllegalArgumentException("El vértice de origen " + verOri + " no existe.");
+	        throw new IllegalArgumentException("el vertice de origen " + verOri + " no existe");
 	    }
 	    if (destino == null) {
-	        throw new IllegalArgumentException("El vértice de destino " + verDes + " no existe.");
+	        throw new IllegalArgumentException("el vertice de destino " + verDes + " no existe");
 	    }
 
 		/* Crear arista desde origen hacia destino con el peso dado */
