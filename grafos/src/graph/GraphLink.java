@@ -68,11 +68,12 @@ public class GraphLink<E extends Comparable<E>> {
 		Vertex<E> origen = searchVertexObject(verOri);
 		Vertex<E> destino = searchVertexObject(verDes);
 
-		/* Validar que ambos vértices existan */
-		if (origen == null || destino == null) {
-			System.out.println("uno o los dos vertices no existen");
-			return;
-		}
+		if (origen == null) {
+	        throw new IllegalArgumentException("El vértice de origen " + verOri + " no existe.");
+	    }
+	    if (destino == null) {
+	        throw new IllegalArgumentException("El vértice de destino " + verDes + " no existe.");
+	    }
 
 		/* Crear arista desde origen hacia destino con el peso dado */
 		Edge<E> objarista = new Edge<>(destino, weight);
@@ -93,16 +94,15 @@ public class GraphLink<E extends Comparable<E>> {
 
 	/**
 	 * Busca un vértice por su dato y retorna el objeto vértice completo.
-	 * Método privado auxiliar para operaciones internas.
 	 * 
-	 * @param verOri Dato del vértice a buscar
+	 * @param data Dato del vértice a buscar
 	 * @return Objeto Vertex si se encuentra, null en caso contrario
 	 */
-	private Vertex<E> searchVertexObject(E verOri) {
+	private Vertex<E> searchVertexObject(E data) {
 		/* Recorrer todos los vértices del grafo */
 		for (Vertex<E> v : listVertex) {
 			/* Comparar usando equals() para encontrar coincidencia */
-			if (v.getData().equals(verOri)) {
+			if (v.getData().equals(data)) {
 				return v;
 			}
 		}
@@ -174,39 +174,24 @@ public class GraphLink<E extends Comparable<E>> {
 		}
 	}
 
-	/**
-	 * Elimina un vértice y todas sus conexiones del grafo.
-	 * Proceso: 1) Elimina referencias desde otros vértices
-	 *          2) Remueve el vértice de la lista principal
-	 * 
-	 * @param verOri Dato del vértice a eliminar
-	 * @return true si se eliminó exitosamente, false si no existía
-	 */
 	public boolean removeVertex(E verOri) {
-		/* Buscar el objeto vértice a eliminar */
-		Vertex<E> obj = searchVertexObject(verOri);
+	    Vertex<E> obj = searchVertexObject(verOri);
+	    if (obj == null) return false;
 
-		if (obj == null) return false;
+	    // Limpiar todas las aristas del vértice eliminado (dirigidos y no dirigidos)
+	    obj.listAdj.destroyList();
 
-		/* Eliminar todas las referencias a este vértice desde otros vértices */
-		for (Vertex<E> v : listVertex) {
-			if (!v.equals(obj)) {
-				/* Eliminar aristas que apuntan al vértice a eliminar */
-				v.listAdj.remove(new Edge<>(obj));
-				
-				/* Para grafos no dirigidos, limpiar también la lista del vértice eliminado */
-				if (!isDirected) {
-					obj.listAdj.remove(new Edge<>(v));
-				}
-			}
-		}
-		
-		/* Finalmente, eliminar el vértice de la lista principal */
-		return listVertex.remove(obj);
+	    // Eliminar referencias desde otros vértices
+	    for (Vertex<E> v : listVertex) {
+	        if (!v.equals(obj)) {
+	            v.listAdj.remove(new Edge<>(obj));
+	        }
+	    }
+
+	    return listVertex.remove(obj);
 	}
-
 	/**
-	 * Realiza recorrido DFS (Depth-First Search) desde un vértice dado.
+	 * Realiza recorrido DFS profundidad desde un vértice dado.
 	 * Implementación recursiva que visita en profundidad.
 	 * 
 	 * @param data Vértice desde donde iniciar el recorrido
@@ -228,7 +213,6 @@ public class GraphLink<E extends Comparable<E>> {
 	}
 
 	/**
-	 * Método auxiliar recursivo para implementar DFS.
 	 * Marca el vértice actual como visitado y recurre en sus vecinos no visitados.
 	 * 
 	 * @param verActual Vértice siendo procesado actualmente
@@ -243,7 +227,8 @@ public class GraphLink<E extends Comparable<E>> {
 		for (Edge<E> edge : verActual.listAdj) {
 			Vertex<E> vecino = edge.getrefDest();
 			
-			/* Recurrir solo en vecinos no visitados */
+			/* Recurrir solo en vecinos no visitados 
+			 * */
 			if (!visitados.contains(vecino)) {
 				dfsRecursivo(vecino, visitados);
 			}
@@ -251,7 +236,7 @@ public class GraphLink<E extends Comparable<E>> {
 	}
 
 	/**
-	 * Realiza recorrido BFS (Breadth-First Search) desde un vértice dado.
+	 * Realiza recorrido BFS anchura desde un vértice dado.
 	 * Implementación iterativa usando cola que visita por niveles.
 	 * 
 	 * @param data Vértice desde donde iniciar el recorrido
@@ -441,101 +426,102 @@ public class GraphLink<E extends Comparable<E>> {
 	 * @return Pila con el camino de menor peso (vacía si no existe)
 	 */
 	public StackLink<E> Dijkstra(E origen, E destino) {
-		/* Inicializar estructura de distancias para todos los vértices */
-		ListaEnlazada<ParDistancia<E>> distancias = new ListaEnlazada<>();
-		PriorityQueueLinkSort<Vertex<E>, Integer> colaPrioridad = new PriorityQueueLinkSort<>();
-
-		/* Configurar distancias iniciales */
-		for (Vertex<E> v : listVertex) {
-			if (v.getData().equals(origen)) {
-				/* Distancia del origen a sí mismo es 0 */
-				distancias.insertLast(new ParDistancia<>(v.getData(), 0, null));
-				colaPrioridad.enqueue(v, 0);
-			} else {
-				/* Distancia inicial infinita para otros vértices */
-				distancias.insertLast(new ParDistancia<>(v.getData(), Integer.MAX_VALUE, null));
-			}
-		}
-
-		ListaEnlazada<Vertex<E>> visitados = new ListaEnlazada<>();
-
-		/* Procesar vértices en orden de distancia creciente */
-		while (!colaPrioridad.isEmpty()) {
-			Vertex<E> actual = null;
-			try {
-				actual = colaPrioridad.dequeue();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			/* Evitar procesar vértices ya visitados */
-			if (visitados.contains(actual)) continue;
-			visitados.insertLast(actual);
-
-			/* Terminar si llegamos al destino */
-			if (actual.getData().equals(destino)) break;
-
-			/* Obtener distancia actual del vértice procesado */
-			int distanciaActual = 0;
-			for (ParDistancia<E> pd : distancias) {
-				if (pd.getVertice().equals(actual.getData())) {
-					distanciaActual = pd.getDistancia();
-					break;
-				}
-			}
-
-			/* Relajar aristas: actualizar distancias de vecinos si se encuentra mejor camino */
-			for (Edge<E> edge : actual.listAdj) {
-				Vertex<E> vecino = edge.getrefDest();
-				if (visitados.contains(vecino)) continue;
-
-				/* Calcular nueva distancia a través del vértice actual */
-				int nuevaDistancia = distanciaActual + edge.getWeight();
-
-				/* Actualizar si la nueva distancia es mejor */
-				for (ParDistancia<E> pd : distancias) {
-					if (pd.getVertice().equals(vecino.getData())) {
-						if (nuevaDistancia < pd.getDistancia()) {
-							pd.setDistancia(nuevaDistancia);
-							pd.setPadre(actual.getData());
-							colaPrioridad.enqueue(vecino, nuevaDistancia);
-						}
-						break;
-					}
-				}
-			}
-		}
-
-		/* Reconstruir camino usando la información de padres */
-		StackLink<E> camino = new StackLink<>();
-		boolean existeCamino = false;
-
-		/* Verificar si existe camino al destino */
-		for (ParDistancia<E> pd : distancias) {
-			if (pd.getVertice().equals(destino) && pd.getDistancia() != Integer.MAX_VALUE) {
-				existeCamino = true;
-				break;
-			}
-		}
-
-		/* Construir camino siguiendo cadena de padres */
-		if (existeCamino) {
-			E actual = destino;
-			while (actual != null) {
-				camino.push(actual); /* Usar pila para obtener orden correcto */
-				
-				/* Buscar padre del vértice actual */
-				E padre = null;
-				for (ParDistancia<E> pd : distancias) {
-					if (pd.getVertice().equals(actual)) {
-						padre = pd.getPadre();
-						break;
-					}
-				}
-				actual = padre;
-			}
-		}
-		return camino;
+	    /* Inicializar estructura de distancias para todos los vértices */
+	    ListaEnlazada<ParDistancia<E>> distancias = new ListaEnlazada<>();
+	    PriorityQueueLinkSort<Vertex<E>, Integer> colaPrioridad = new PriorityQueueLinkSort<>();
+	    
+	    /* Configurar distancias iniciales */
+	    for (Vertex<E> v : listVertex) {
+	        if (v.getData().equals(origen)) {
+	            /* Distancia del origen a sí mismo es 0 */
+	            distancias.insertLast(new ParDistancia<>(v.getData(), 0, null));
+	            colaPrioridad.enqueue(v, 0);
+	        } else {
+	            /* Distancia inicial infinita para otros vértices */
+	            distancias.insertLast(new ParDistancia<>(v.getData(), Integer.MAX_VALUE, null));
+	        }
+	    }
+	    
+	    ListaEnlazada<Vertex<E>> visitados = new ListaEnlazada<>();
+	    
+	    /* Procesar vértices en orden de distancia creciente */
+	    while (!colaPrioridad.isEmpty()) {
+	        Vertex<E> actual = null;
+	        try {
+	            actual = colaPrioridad.dequeue();
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	        
+	        /* Evitar procesar vértices ya visitados */
+	        if (visitados.contains(actual)) continue;
+	        visitados.insertLast(actual);
+	        
+	        /* Terminar si llegamos al destino */
+	        if (actual.getData().equals(destino)) break;
+	        
+	        /* Obtener distancia actual del vértice procesado */
+	        int distanciaActual = 0;
+	        for (ParDistancia<E> pd : distancias) {
+	            if (pd.getVertice().equals(actual.getData())) {
+	                distanciaActual = pd.getDistancia();
+	                break;
+	            }
+	        }
+	        
+	        /* Relajar aristas: actualizar distancias de vecinos si se encuentra mejor camino */
+	        for (Edge<E> edge : actual.listAdj) {
+	            Vertex<E> vecino = edge.getrefDest();
+	            if (visitados.contains(vecino)) continue; // Saltar si ya visitado
+	            
+	            /* Calcular nueva distancia a través del vértice actual */
+	            int nuevaDistancia = distanciaActual + edge.getWeight();
+	            
+	            /* Actualizar si la nueva distancia es mejor */
+	            for (ParDistancia<E> pd : distancias) {
+	                if (pd.getVertice().equals(vecino.getData())) {
+	                    if (nuevaDistancia < pd.getDistancia()) {
+	                        pd.setDistancia(nuevaDistancia);
+	                        pd.setPadre(actual.getData());
+	                        /* Usar updatePriority para actualizar la cola */
+	                        colaPrioridad.updatePriority(vecino, nuevaDistancia);
+	                    }
+	                    break;
+	                }
+	            }
+	        }
+	    }
+	    
+	    /* Reconstruir camino usando la información de padres */
+	    StackLink<E> camino = new StackLink<>();
+	    boolean existeCamino = false;
+	    
+	    /* Verificar si existe camino al destino */
+	    for (ParDistancia<E> pd : distancias) {
+	        if (pd.getVertice().equals(destino) && pd.getDistancia() != Integer.MAX_VALUE) {
+	            existeCamino = true;
+	            break;
+	        }
+	    }
+	    
+	    /* Construir camino siguiendo cadena de padres */
+	    if (existeCamino) {
+	        E actual = destino;
+	        while (actual != null) {
+	            camino.push(actual); /* Usar pila para obtener orden correcto */
+	            
+	            /* Buscar padre del vértice actual */
+	            E padre = null;
+	            for (ParDistancia<E> pd : distancias) {
+	                if (pd.getVertice().equals(actual)) {
+	                    padre = pd.getPadre();
+	                    break;
+	                }
+	            }
+	            actual = padre;
+	        }
+	    }
+	    return camino;
 	}
 
 	/**

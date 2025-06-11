@@ -1,54 +1,67 @@
 package Main;
 
+import ImpStack.StackLink;
+import ListLinked.ListaEnlazada;
 import graph.GraphLink;
 
 public class Main {
-    public static void main(String[] args) {
-    	// Grafo No Dirigido
-        System.out.println("---- GRAFO NO DIRIGIDO ----");
-        GraphLink<String> grafoNoDirigido = new GraphLink<>(false);
+	public static void main(String[] args) {
+        // Crear un grafo no dirigido
+        GraphLink<String> grafo = new GraphLink<>(false);
 
-        grafoNoDirigido.insertVertex("A");
-        grafoNoDirigido.insertVertex("B");
-        grafoNoDirigido.insertVertex("C");
+        // Insertar vértices
+        grafo.insertVertex("A");
+        grafo.insertVertex("B");
+        grafo.insertVertex("C");
+        grafo.insertVertex("D");
+        grafo.insertVertex("E");
 
-        grafoNoDirigido.insertarEdge("A", "B", 1);
-        grafoNoDirigido.insertarEdge("B", "C", 2);
+        // Insertar aristas con peso
+        grafo.insertEdgeWeight("A", "B", 4);
+        grafo.insertEdgeWeight("A", "C", 2);
+        grafo.insertEdgeWeight("B", "D", 5);
+        grafo.insertEdgeWeight("C", "D", 1);
+        grafo.insertEdgeWeight("D", "E", 3);
 
-        System.out.println("Grafo inicial:");
-        System.out.println(grafoNoDirigido);
+        // Mostrar recorridos
+        System.out.println("\n--- DFS ---");
+        grafo.dfs("A");
 
-        grafoNoDirigido.removeEdge("A", "B");
-        System.out.println("Después de eliminar arista A - B:");
-        System.out.println(grafoNoDirigido);
+        System.out.println("\n\n--- BFS ---");
+        grafo.bfs("A");
 
-        grafoNoDirigido.removeVertex("C");
-        System.out.println("Después de eliminar vértice C:");
-        System.out.println(grafoNoDirigido);
+        // Ver si el grafo es conexo
+        System.out.println("\n¿Es conexo?: " + grafo.isConexo());
 
-        System.out.println("DFS desde A:");
-        grafoNoDirigido.dfs("A");
+        // Mostrar camino más corto (en número de aristas) entre A y E
+        System.out.println("\nCamino corto entre A y E (BFS):");
+        ListaEnlazada<String> camino = grafo.shortPath("A", "E");
+        for (String v : camino) {
+            System.out.print(v + " ");
+        }
 
-        // Grafo Dirigido
-        System.out.println("\n---- GRAFO DIRIGIDO ----");
-        GraphLink<String> grafoDirigido = new GraphLink<>(true);
+        // Mostrar camino más corto por Dijkstra
+        System.out.println("\n\nCamino más corto entre A y E (Dijkstra):");
+        StackLink<String> caminoDijkstra = grafo.Dijkstra("A", "E");
+        while (!caminoDijkstra.isEmpty()) {
+            try {
+                System.out.print(caminoDijkstra.pop() + " ");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
-        grafoDirigido.insertVertex("X");
-        grafoDirigido.insertVertex("Y");
-        grafoDirigido.insertVertex("Z");
+        // Verificar existencia de arista
+        System.out.println("\n\n¿Existe arista entre A y B?: " + grafo.searchEdge("A", "B"));
+        System.out.println("¿Existe arista entre A y E?: " + grafo.searchEdge("A", "E"));
 
-        grafoDirigido.insertarEdge("X", "Y", 3);
-        grafoDirigido.insertarEdge("Y", "Z", 4);
+        // Eliminar arista y vértice
+        grafo.removeEdge("A", "B");
+        System.out.println("\nEliminando arista entre A y B...");
+        System.out.println("¿Existe arista entre A y B?: " + grafo.searchEdge("A", "B"));
 
-        System.out.println("Grafo dirigido inicial:");
-        System.out.println(grafoDirigido);
-
-        grafoDirigido.removeEdge("X", "Y");
-        System.out.println("Después de eliminar arista X → Y:");
-        System.out.println(grafoDirigido);
-
-        System.out.println("DFS desde Y:");
-        grafoDirigido.dfs("Y");
+        grafo.removeVertex("C");
+        System.out.println("\nEliminando vértice C...");
+        System.out.println("¿Existe vértice C?: " + grafo.searchVertex("C"));
     }
-   
 }
