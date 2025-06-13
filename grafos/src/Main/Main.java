@@ -8,6 +8,7 @@ public class Main {
 	public static void main(String[] args) {
         // Crear un grafo no dirigido
         GraphLink<String> grafo = new GraphLink<>(false);
+        //gbhvljñdoskamcvnjlhdñsjvñdfv djf
 
         // Insertar vértices
         grafo.insertVertex("A");
