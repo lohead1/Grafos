@@ -8,17 +8,10 @@ import ImpStack.StackLink;
 import ListLinked.ListaEnlazada;
 
 public class GraphLink<E extends Comparable<E>> {
-	/* Lista que contiene todos los vértices del grafo */
 	protected ListaEnlazada<Vertex<E>> listVertex;
 	
-	/* Indica si el grafo es dirigido (true) o no dirigido (false) */
 	boolean isDirected;
-	
-	/**
-	 * Constructor que inicializa un grafo vacío.
-	 * 
-	 * @param isDirected true para grafo dirigido, false para no dirigido
-	 */
+
 	public GraphLink(boolean isDirected) {
 		listVertex = new ListaEnlazada<Vertex<E>>();
 		this.isDirected = isDirected;
@@ -69,10 +62,10 @@ public class GraphLink<E extends Comparable<E>> {
 		Vertex<E> destino = searchVertexObject(verDes);
 
 		if (origen == null) {
-	        throw new IllegalArgumentException("el vertice de origen " + verOri + " no existe");
+	        throw new IllegalArgumentException("El vértice de origen " + verOri + " no existe.");
 	    }
 	    if (destino == null) {
-	        throw new IllegalArgumentException("el vertice de destino " + verDes + " no existe");
+	        throw new IllegalArgumentException("El vértice de destino " + verDes + " no existe.");
 	    }
 
 		/* Crear arista desde origen hacia destino con el peso dado */
@@ -90,7 +83,7 @@ public class GraphLink<E extends Comparable<E>> {
 				destino.listAdj.insertLast(objarista2);
 			}
 		}
-	}
+	}	
 
 	/**
 	 * Busca un vértice por su dato y retorna el objeto vértice completo.
@@ -178,7 +171,7 @@ public class GraphLink<E extends Comparable<E>> {
 	    Vertex<E> obj = searchVertexObject(verOri);
 	    if (obj == null) return false;
 
-	    // Limpiar todas las aristas del vértice eliminado (dirigidos y no dirigidos)
+	    // Limpiar todas las aristas del vértice eliminado
 	    obj.listAdj.destroyList();
 
 	    // Eliminar referencias desde otros vértices
@@ -243,7 +236,6 @@ public class GraphLink<E extends Comparable<E>> {
 	 * @return true si se realizó el recorrido, false si el vértice no existe
 	 */
 	public boolean bfs(E data) {
-		/* Buscar vértice de inicio */
 		Vertex<E> inicio = searchVertexObject(data);
 		if (inicio == null) return false;
 
@@ -365,7 +357,7 @@ public class GraphLink<E extends Comparable<E>> {
 	}
 
 	/**
-	 * Alias para bfsPath - retorna el camino más corto en número de aristas.
+	 * retorna el camino más corto en número de aristas.
 	 * 
 	 * @param origen Vértice de inicio
 	 * @param destino Vértice de destino
@@ -430,7 +422,6 @@ public class GraphLink<E extends Comparable<E>> {
 	    ListaEnlazada<ParDistancia<E>> distancias = new ListaEnlazada<>();
 	    PriorityQueueLinkSort<Vertex<E>, Integer> colaPrioridad = new PriorityQueueLinkSort<>();
 	    
-	    /* Configurar distancias iniciales */
 	    for (Vertex<E> v : listVertex) {
 	        if (v.getData().equals(origen)) {
 	            /* Distancia del origen a sí mismo es 0 */
@@ -446,6 +437,7 @@ public class GraphLink<E extends Comparable<E>> {
 	    
 	    /* Procesar vértices en orden de distancia creciente */
 	    while (!colaPrioridad.isEmpty()) {
+	    	//sacamos vertice con menor prioridad
 	        Vertex<E> actual = null;
 	        try {
 	            actual = colaPrioridad.dequeue();
@@ -453,11 +445,11 @@ public class GraphLink<E extends Comparable<E>> {
 	            e.printStackTrace();
 	        }
 	        
-	        /* Evitar procesar vértices ya visitados */
+	        //si marca como visitado se agrega a la lista
 	        if (visitados.contains(actual)) continue;
 	        visitados.insertLast(actual);
 	        
-	        /* Terminar si llegamos al destino */
+	        /* si es vertice actual es el destino, sale */
 	        if (actual.getData().equals(destino)) break;
 	        
 	        /* Obtener distancia actual del vértice procesado */
@@ -523,7 +515,469 @@ public class GraphLink<E extends Comparable<E>> {
 	    }
 	    return camino;
 	}
+	/**
+	 * Calcula el grado de un nodo específico
+	 * El grado es la cantidad de aristas conectadas al nodo
+	 * 
+	 * @param data Dato del vértice
+	 * @return Grado del vértice, -1 si no existe
+	 */
+	public int getNodeDegree(E data) {
+	    Vertex<E> vertex = searchVertexObject(data);
+	    if (vertex == null) return -1;
+	    
+	    return vertex.listAdj.length();
+	}
 
+	/**
+	 * Obtiene todos los grados de los nodos del grafo
+	 * 
+	 * @return Lista enlazada con pares (nodo, grado)
+	 */
+	public ListaEnlazada<String> getAllNodeDegrees() {
+	    ListaEnlazada<String> degrees = new ListaEnlazada<>();
+	    
+	    for (Vertex<E> vertex : listVertex) {
+	        int degree = vertex.listAdj.length();
+	        degrees.insertLast("G(" + vertex.getData() + ") = " + degree);
+	    }
+	    
+	    return degrees;
+	}
+	/**
+	 * Un camino tiene exactamente 2 nodos de grado 1 (extremos) y n-2 nodos de grado 2
+	 * Fórmula matemática: Para Px con x nodos:
+	 * - Número de aristas = x - 1
+	 * - 2 nodos con grado 1, (x-2) nodos con grado 2
+	 * Verifica si el grafo es de tipo CAMINO (Px)
+	 * 
+	 * @return true si es un camino, false en caso contrario
+	 */
+	public boolean isPath() {
+	    // Solo aplica a grafos no dirigidos
+	    if (isDirected || listVertex.length() < 2) return false;
+	    
+	    int n = listVertex.length();
+	    int nodesWithDegree1 = 0;  // Contador de nodos con grado 1
+	    int nodesWithDegree2 = 0;  // Contador de nodos con grado 2
+	    int totalEdges = 0;        // Contador total de aristas
+	    
+	    for (Vertex<E> vertex : listVertex) {
+	        int degree = vertex.listAdj.length();
+	        totalEdges += degree;
+	        
+	        if (degree == 1) {
+	            nodesWithDegree1++;
+	        } else if (degree == 2) {
+	            nodesWithDegree2++;
+	        } else {
+	            return false; // Si hay nodos con grado diferente a 1 o 2, no es camino
+	        }
+	    }	   
+	    totalEdges /= 2;
+
+	    return (nodesWithDegree1 == 2) && 
+	           (nodesWithDegree2 == n - 2) && 
+	           (totalEdges == n - 1) &&
+	           isConexo();
+	}
+	/**
+	 * Un ciclo tiene todos los nodos con grado exactamente 2
+	 * Fórmula matemática: Para Cx con x nodos:
+	 * - Número de aristas = x
+	 * - Todos los nodos tienen grado 2
+	 * Verifica si el grafo es de tipo CICLO (Cx)
+	 * @return true si es un ciclo, false en caso contrario
+	 */
+	public boolean isCycle() {
+	    // Solo aplica a grafos no dirigidos y debe tener al menos 3 nodos
+	    if (isDirected || listVertex.length() < 3) return false;
+	    
+	    int n = listVertex.length();
+	    int totalEdges = 0;
+	    
+	    // Verificar que todos los nodos tengan grado exactamente 2
+	    for (Vertex<E> vertex : listVertex) {
+	        int degree = vertex.listAdj.length();
+	        
+	        // Si algún nodo no tiene grado 2, no es un ciclo
+	        if (degree != 2) return false;
+	        
+	        totalEdges += degree;
+	    }	    
+	    totalEdges /= 2;	   	
+	    return (totalEdges == n) && isConexo();
+	}
+	/**
+	 * Una rueda tiene un nodo central de grado (n-1) y (n-1) nodos de grado 3
+	 * que forman un ciclo conectado al centro
+	 * Fórmula matemática: Para Wx con x nodos:
+	 * - 1 nodo central con grado (x-1)
+	 * - (x-1) nodos periféricos con grado 3
+	 * - Número de aristas = 2(x-1)
+	 * Verifica si el grafo es de tipo RUEDA (Wx)
+	 * 
+	 * @return true si es una rueda, false en caso contrario
+	 */
+	public boolean isWheel() {
+	    // Solo aplica a grafos no dirigidos y debe tener al menos 4 nodos
+	    if (isDirected || listVertex.length() < 4) return false;
+	    
+	    int n = listVertex.length();
+	    int nodesWithDegreeN1 = 0; // Nodos con grado n-1 (centro)
+	    int nodesWithDegree3 = 0;  // Nodos con grado 3 (periferia)
+	    int totalEdges = 0;
+	    Vertex<E> centerVertex = null;
+	    
+	    // Analizar grados de todos los nodos
+	    for (Vertex<E> vertex : listVertex) {
+	        int degree = vertex.listAdj.length();
+	        totalEdges += degree;
+	        
+	        if (degree == n - 1) {
+	            nodesWithDegreeN1++;
+	            centerVertex = vertex; // Guardar referencia al nodo central
+	        } else if (degree == 3) {
+	            nodesWithDegree3++;
+	        } else {
+	            return false; // Grado inválido para rueda
+	        }
+	    }
+	    
+	    totalEdges /= 2; // Cada arista se cuenta dos veces
+	    
+	    // Verificar estructura básica matemática de rueda:
+	    // 1. Exactamente 1 nodo con grado (n-1) - nodo central
+	    // 2. Exactamente (n-1) nodos con grado 3 - nodos periféricos
+	    // 3. Total de aristas = 2(n-1)
+	    if (nodesWithDegreeN1 != 1 || nodesWithDegree3 != n - 1 || totalEdges != 2 * (n - 1)) {
+	        return false;
+	    }
+	    
+	    // Verificar que los nodos periféricos formen un ciclo
+	    // Crear lista de nodos periféricos (excluyendo el centro)
+	    ListaEnlazada<Vertex<E>> peripheralNodes = new ListaEnlazada<>();
+	    for (Vertex<E> vertex : listVertex) {
+	        if (!vertex.equals(centerVertex)) {
+	            peripheralNodes.insertLast(vertex);
+	        }
+	    }
+	    
+	    // Verificar que cada nodo periférico esté conectado exactamente a:
+	    // 1. El nodo central (1 conexión)
+	    // 2. Exactamente 2 otros nodos periféricos (formando el ciclo exterior)
+	    for (Vertex<E> pNode : peripheralNodes) {
+	        boolean connectedToCenter = false;
+	        int peripheralConnections = 0;
+	        
+	        // Examinar todas las conexiones del nodo periférico
+	        for (Edge<E> edge : pNode.listAdj) {
+	            if (edge.getrefDest().equals(centerVertex)) {
+	                connectedToCenter = true;
+	            } else if (peripheralNodes.contains(edge.getrefDest())) {
+	                peripheralConnections++;
+	            }
+	        }
+	        
+	        // Cada nodo periférico debe estar conectado al centro y a exactamente 2 periféricos
+	        if (!connectedToCenter || peripheralConnections != 2) {
+	            return false;
+	        }
+	    }
+	    
+	    // Verificar que el grafo sea conexo
+	    return isConexo();
+	}
+	/**
+	 * Un grafo completo tiene todos los nodos conectados entre sí
+	 * Fórmula matemática: Para Kx con x nodos:
+	 * - Cada nodo tiene grado (x-1)
+	 * - Número total de aristas = x(x-1)/2
+	 * Verifica si el grafo es COMPLETO (Kx) 
+	 * @return true si es completo, false en caso contrario
+	 */
+	public boolean isComplete() {
+	    // Solo aplica a grafos no dirigidos
+	    if (isDirected || listVertex.length() < 1) return false;
+	    
+	    int n = listVertex.length();
+	    int expectedDegree = n - 1; // En grafo completo, cada nodo se conecta con todos los demás
+	    int totalEdges = 0;
+	    
+	    // Verificar que todos los nodos tengan grado (n-1)
+	    for (Vertex<E> vertex : listVertex) {
+	        int degree = vertex.listAdj.length();
+	        
+	        // Si algún nodo no tiene el grado esperado, no es completo
+	        if (degree != expectedDegree) return false;
+	        
+	        totalEdges += degree;
+	    }
+	    
+	    // En grafo no dirigido, cada arista se cuenta dos veces
+	    totalEdges /= 2;
+	    
+	    // Aplicar fórmula matemática del grafo completo:
+	    // En un grafo completo Kn, el número de aristas = n(n-1)/2
+	    // Esto se deriva de la combinatoria: C(n,2) = n!/(2!(n-2)!) = n(n-1)/2
+	    int expectedEdges = (n * (n - 1)) / 2;
+	    
+	    // Verificar condiciones matemáticas:
+	    // 1. Cada nodo tiene grado (n-1) - ya verificado arriba
+	    // 2. Total de aristas = n(n-1)/2
+	    // 3. El grafo debe ser conexo (siempre cierto si es completo)
+	    return (totalEdges == expectedEdges) && isConexo();
+	}
+	/**
+	 * Obtiene la matriz de adyacencia del grafo como array bidimensional de enteros.
+	 * En la matriz: 0 = no hay arista, peso = hay arista con ese peso
+	 * 
+	 * @return Matriz de adyacencia como int[][]
+	 */
+	public int[][] getAdjacencyMatrix() {
+	    int n = listVertex.length();
+	    int[][] matrix = new int[n][n];
+	    
+	    // Crear array de vértices para mapeo directo por índice
+	    E[] vertexArray = (E[]) new Comparable[n];
+	    int index = 0;
+	    for (Vertex<E> vertex : listVertex) {
+	        vertexArray[index++] = vertex.getData();
+	    }
+	    
+	    // Llenar la matriz
+	    for (int i = 0; i < n; i++) {
+	        E vertexData = vertexArray[i];
+	        Vertex<E> vertex = searchVertexObject(vertexData);
+	        
+	        // Recorrer las aristas del vértice actual
+	        for (Edge<E> edge : vertex.listAdj) {
+	            E destData = edge.getrefDest().getData();
+	            
+	            // Encontrar índice del vértice destino
+	            for (int j = 0; j < n; j++) {
+	                if (vertexArray[j].equals(destData)) {
+	                    matrix[i][j] = edge.getWeight();
+	                    break;
+	                }
+	            }
+	        }
+	    }
+	    
+	    return matrix;
+	}
+
+	/**
+	 * Obtiene la matriz de adyacencia binaria del grafo.
+	 * En la matriz: 0 = no hay arista, 1 = hay arista (sin considerar peso)
+	 * 
+	 * @return Matriz de adyacencia binaria como int[][]
+	 */
+	public int[][] getBinaryAdjacencyMatrix() {
+	    int n = listVertex.length();
+	    int[][] matrix = new int[n][n];
+	    
+	    // Crear array de vértices para mapeo directo por índice
+	    E[] vertexArray = (E[]) new Comparable[n];
+	    int index = 0;
+	    for (Vertex<E> vertex : listVertex) {
+	        vertexArray[index++] = vertex.getData();
+	    }
+	    
+	    // Llenar la matriz
+	    for (int i = 0; i < n; i++) {
+	        E vertexData = vertexArray[i];
+	        Vertex<E> vertex = searchVertexObject(vertexData);
+	        
+	        // Recorrer las aristas del vértice actual
+	        for (Edge<E> edge : vertex.listAdj) {
+	            E destData = edge.getrefDest().getData();
+	            
+	            // Encontrar índice del vértice destino
+	            for (int j = 0; j < n; j++) {
+	                if (vertexArray[j].equals(destData)) {
+	                    matrix[i][j] = 1; // Solo marca presencia, no peso
+	                    break;
+	                }
+	            }
+	        }
+	    }
+	    
+	    return matrix;
+	}
+
+	/**
+	 * Obtiene el orden de los vértices usado en la matriz de adyacencia.
+	 * Útil para interpretar las posiciones en la matriz.
+	 * 
+	 * @return Array con el orden de los vértices
+	 */
+	public E[] getVertexOrder() {
+	    int n = listVertex.length();
+	    E[] vertexArray = (E[]) new Comparable[n];
+	    int index = 0;
+	    for (Vertex<E> vertex : listVertex) {
+	        vertexArray[index++] = vertex.getData();
+	    }
+	    return vertexArray;
+	}
+
+	/**
+	 * Imprime la matriz de adyacencia con pesos de forma formateada.
+	 * Incluye etiquetas de filas y columnas para mejor legibilidad.
+	 */
+	public void printAdjacencyMatrix() {
+	    int[][] matrix = getAdjacencyMatrix();
+	    E[] order = getVertexOrder();
+	    int n = matrix.length;
+	    
+	    if (n == 0) {
+	        System.out.println("El grafo está vacío");
+	        return;
+	    }
+	    
+	    System.out.println("\n=== MATRIZ DE ADYACENCIA (con pesos) ===");
+	    
+	    // Imprimir encabezado de columnas
+	    System.out.print("     ");
+	    for (int j = 0; j < n; j++) {
+	        System.out.printf("%4s", order[j]);
+	    }
+	    System.out.println();
+	    
+	    // Imprimir filas con etiquetas
+	    for (int i = 0; i < n; i++) {
+	        System.out.printf("%3s: ", order[i]);
+	        for (int j = 0; j < n; j++) {
+	            System.out.printf("%4d", matrix[i][j]);
+	        }
+	        System.out.println();
+	    }
+	    System.out.println();
+	}
+
+	/**
+	 * Imprime la matriz de adyacencia binaria de forma formateada.
+	 * Solo muestra 0s y 1s, ignorando los pesos.
+	 */
+	public void printBinaryAdjacencyMatrix() {
+	    int[][] matrix = getBinaryAdjacencyMatrix();
+	    E[] order = getVertexOrder();
+	    int n = matrix.length;
+	    
+	    if (n == 0) {
+	        System.out.println("El grafo está vacío");
+	        return;
+	    }
+	    
+	    System.out.println("\n=== MATRIZ DE ADYACENCIA BINARIA ===");
+	    
+	    // Imprimir encabezado de columnas
+	    System.out.print("     ");
+	    for (int j = 0; j < n; j++) {
+	        System.out.printf("%3s", order[j]);
+	    }
+	    System.out.println();
+	    
+	    // Imprimir filas con etiquetas
+	    for (int i = 0; i < n; i++) {
+	        System.out.printf("%3s: ", order[i]);
+	        for (int j = 0; j < n; j++) {
+	            System.out.printf("%3d", matrix[i][j]);
+	        }
+	        System.out.println();
+	    }
+	    System.out.println();
+	}
+
+	/**
+	 * Retorna la matriz de adyacencia como String formateado.
+	 * Útil para logging o almacenamiento.
+	 * 
+	 * @param includePesos true para incluir pesos, false para matriz binaria
+	 * @return String con la matriz formateada
+	 */
+	public String adjacencyMatrixToString(boolean includePesos) {
+	    int[][] matrix = includePesos ? getAdjacencyMatrix() : getBinaryAdjacencyMatrix();
+	    E[] order = getVertexOrder();
+	    int n = matrix.length;
+	    
+	    if (n == 0) return "Grafo vacío";
+	    
+	    StringBuilder sb = new StringBuilder();
+	    String title = includePesos ? "MATRIZ DE ADYACENCIA (con pesos)" : "MATRIZ DE ADYACENCIA BINARIA";
+	    sb.append("=== ").append(title).append(" ===\n");
+	    
+	    // Encabezado de columnas
+	    sb.append("     ");
+	    for (int j = 0; j < n; j++) {
+	        sb.append(String.format(includePesos ? "%4s" : "%3s", order[j]));
+	    }
+	    sb.append("\n");
+	    
+	    // Filas con datos
+	    for (int i = 0; i < n; i++) {
+	        sb.append(String.format("%3s: ", order[i]));
+	        for (int j = 0; j < n; j++) {
+	            sb.append(String.format(includePesos ? "%4d" : "%3d", matrix[i][j]));
+	        }
+	        sb.append("\n");
+	    }
+	    
+	    return sb.toString();
+	}
+
+	/**
+	 * Verifica si dos vértices son adyacentes consultando la matriz.
+	 * Alternativa al método searchEdge() usando representación matricial.
+	 * 
+	 * @param vertex1 Primer vértice
+	 * @param vertex2 Segundo vértice
+	 * @return true si son adyacentes, false en caso contrario
+	 */
+	public boolean areAdjacentMatrix(E vertex1, E vertex2) {
+	    int[][] matrix = getBinaryAdjacencyMatrix();
+	    E[] order = getVertexOrder();
+	    
+	    int index1 = -1, index2 = -1;
+	    
+	    // Encontrar índices de los vértices
+	    for (int i = 0; i < order.length; i++) {
+	        if (order[i].equals(vertex1)) index1 = i;
+	        if (order[i].equals(vertex2)) index2 = i;
+	    }
+	    
+	    if (index1 == -1 || index2 == -1) return false;
+	    
+	    // Para grafo dirigido: verificar solo una dirección
+	    // Para grafo no dirigido: la matriz es simétrica
+	    return matrix[index1][index2] == 1;
+	}
+
+	/**
+	 * Obtiene el peso de la arista entre dos vértices usando la matriz.
+	 * 
+	 * @param vertex1 Vértice origen
+	 * @param vertex2 Vértice destino
+	 * @return Peso de la arista, 0 si no existe, -1 si algún vértice no existe
+	 */
+	public int getEdgeWeightMatrix(E vertex1, E vertex2) {
+	    int[][] matrix = getAdjacencyMatrix();
+	    E[] order = getVertexOrder();
+	    
+	    int index1 = -1, index2 = -1;
+	    
+	    // Encontrar índices de los vértices
+	    for (int i = 0; i < order.length; i++) {
+	        if (order[i].equals(vertex1)) index1 = i;
+	        if (order[i].equals(vertex2)) index2 = i;
+	    }
+	    
+	    if (index1 == -1 || index2 == -1) return -1;
+	    
+	    return matrix[index1][index2];
+	}
+	
 	/**
 	 * Retorna representación en cadena de todos los vértices del grafo.
 	 * Delega a la implementación toString() de la lista de vértices.

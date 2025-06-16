@@ -3,9 +3,14 @@ package graph;
 import ImpQueue.Queue;
 import ImpQueue.QueueLink;
 import ListLinked.ListaEnlazada;
-
+/**
+ * Soporta tanto grafos dirigidos como no dirigidos.
+ * 
+ * @param <V> Tipo de dato almacenado en los vértices (debe ser comparable)
+ * @param <E> Tipo de dato para el peso de las aristas (debe ser comparable)
+ */
 public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
-    /** Lista de todos los vértices del grafo */
+	/** Lista de todos los vértices del grafo */
     private ListaEnlazada<VertexObj<V, E>> secVertex;
     
     /** Lista de todas las aristas del grafo */
@@ -165,6 +170,7 @@ public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
             return false;
         }
 
+        EdgeObj<V, E> edgeToRemove = null;
         for (EdgeObj<V, E> edge : secEdge) {
             boolean shouldRemove = false;
             
@@ -178,13 +184,18 @@ public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
             }
             
             if (shouldRemove) {
-                boolean removed = secEdge.remove(edge);
-                if (removed) {
-                    String direction = isDirected ? " -> " : " - ";
-                    System.out.println("Arista '" + v1 + direction + v2 + "' eliminada correctamente");
-                }
-                return removed;
+                edgeToRemove = edge;
+                break;
             }
+        }
+        
+        if (edgeToRemove != null) {
+            boolean removed = secEdge.remove(edgeToRemove);
+            if (removed) {
+                String direction = isDirected ? " -> " : " - ";
+                System.out.println("Arista '" + v1 + direction + v2 + "' eliminada correctamente");
+            }
+            return removed;
         }
         
         System.out.println("Advertencia: No se encontró la arista entre '" + v1 + "' y '" + v2 + "'");
@@ -244,8 +255,6 @@ public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
      * BFS explora nivel por nivel, visitando primero todos los vecinos
      * directos antes de pasar al siguiente nivel.
      * 
-     * Complejidad: O(V + E) donde V = vértices, E = aristas
-     * 
      * @param startVertex Vértice desde donde comenzar el recorrido
      * @return true si el recorrido se completó exitosamente
      */
@@ -300,8 +309,6 @@ public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
     /**
      * Realiza un recorrido en profundidad (DFS) desde un vértice dado.
      * DFS explora tan profundo como sea posible antes de retroceder.
-     * 
-     * Complejidad: O(V + E) donde V = vértices, E = aristas
      * 
      * @param startVertex Vértice desde donde comenzar el recorrido
      * @return true si el recorrido se completó exitosamente
@@ -452,7 +459,287 @@ public class GraphListEdge<V extends Comparable<V>, E extends Comparable<E>> {
         }
         return neighbors;
     }
-    
+    /**
+     * Obtiene el grado de un nodo específico.
+     * 
+     * @param v El valor del vértice
+     * @return Grado del vértice, -1 si no existe
+     */
+    public int getNodeDegree(V v) {
+        VertexObj<V, E> vertex = getVertex(v);
+        if (vertex == null) return -1;
+
+        int degree = 0;
+        for (EdgeObj<V, E> edge : secEdge) {
+            if (edge.getEndVertex1().equals(vertex) || edge.getEndVertex2().equals(vertex)) {
+                degree++;
+            }
+        }
+        return degree;
+    }
+
+    /**
+     * Verifica si el grafo es de tipo CAMINO (Px).
+     * Un camino tiene exactamente 2 nodos de grado 1 y n-2 nodos de grado 2.
+     * 
+     * @return true si es un camino, false en caso contrario
+     */
+    public boolean isDirectedPath() {
+        if (!isDirected || secVertex.length() < 2) return false;
+
+        int nodesWithDegree1 = 0;  // Contador de nodos con grado 1
+        int nodesWithDegree2 = 0;  // Contador de nodos con grado 2
+
+        for (VertexObj<V, E> vertex : secVertex) {
+            int degree = getNodeDegree(vertex.getInfo());
+            if (degree == 1) {
+                nodesWithDegree1++;
+            } else if (degree == 2) {
+                nodesWithDegree2++;
+            } else {
+                return false; // Si hay nodos con grado diferente a 1 o 2, no es camino
+            }
+        }
+
+        return (nodesWithDegree1 == 2) && (nodesWithDegree2 == (secVertex.length() - 2));
+    }
+
+    /**
+     * Verifica si el grafo es de tipo CICLO (Cx).
+     * Un ciclo tiene todos los nodos con grado exactamente 2.
+     * 
+     * @return true si es un ciclo, false en caso contrario
+     */
+    public boolean isDirectedCycle() {
+        if (!isDirected || secVertex.length() < 3) return false;
+
+        for (VertexObj<V, E> vertex : secVertex) {
+            if (getNodeDegree(vertex.getInfo()) != 2) {
+                return false; // Si algún nodo no tiene grado 2, no es un ciclo
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Verifica si el grafo es de tipo RUEDA (Wx).
+     * Una rueda tiene un nodo central de grado (n-1) y (n-1) nodos de grado 3.
+     * 
+     * @return true si es una rueda, false en caso contrario
+     */
+    public boolean isDirectedWheel() {
+        if (!isDirected || secVertex.length() < 4) return false;
+
+        int n = secVertex.length();
+        int nodesWithDegreeN1 = 0; // Nodos con grado n-1 (centro)
+        int nodesWithDegree3 = 0;  // Nodos con grado 3 (periferia)
+
+        for (VertexObj<V, E> vertex : secVertex) {
+            int degree = getNodeDegree(vertex.getInfo());
+            if (degree == n - 1) {
+                nodesWithDegreeN1++;
+            } else if (degree == 3) {
+                nodesWithDegree3++;
+            } else {
+                return false; // Grado inválido para rueda
+            }
+        }
+
+        return (nodesWithDegreeN1 == 1) && (nodesWithDegree3 == n - 1);
+    }                 
+    /**
+     * @param vertices Lista enlazada con vértices
+     * @param edges Lista enlazada con aristas (EdgeObj con vértices y peso)
+     */
+    public void defineFromFormal(ListaEnlazada<V> vertices, ListaEnlazada<EdgeObj<V, E>> edges) {
+        this.secVertex = new ListaEnlazada<>();
+        this.secEdge = new ListaEnlazada<>();
+        this.isDirected = false;
+
+        for (V v : vertices) {
+            this.insertVertex(v);
+        }
+
+        for (EdgeObj<V, E> e : edges) {
+            V v1 = e.getEndVertex1().getInfo();
+            V v2 = e.getEndVertex2().getInfo();
+            E w = e.getWeight();
+            this.insertEdgeWeight(v1, v2, w);
+        }
+    }
+
+    /**
+     * La matriz debe ser cuadrada y simétrica.
+     * @param vertexOrder Array con orden de vértices (filas y columnas)
+     * @param adjacencyMatrix Matriz bidimensional con pesos o null
+     */
+    public void defineFromAdjacencyMatrix(V[] vertexOrder, E[][] adjacencyMatrix) {
+        this.secVertex = new ListaEnlazada<>();
+        this.secEdge = new ListaEnlazada<>();
+        this.isDirected = false;
+
+        int n = vertexOrder.length;
+        if (adjacencyMatrix.length != n) {
+            throw new IllegalArgumentException("Matriz no cuadrada");
+        }
+        for (E[] row : adjacencyMatrix) {
+            if (row.length != n) {
+                throw new IllegalArgumentException("Matriz no cuadrada");
+            }
+        }
+
+        for (V v : vertexOrder) {
+            this.insertVertex(v);
+        }
+
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                E w = adjacencyMatrix[i][j];
+                if (w != null && !w.equals(zeroEquivalent(w))) {
+                    this.insertEdgeWeight(vertexOrder[i], vertexOrder[j], w);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param vertices Lista enlazada de VertexObj
+     * @param edges Lista enlazada de EdgeObj
+     */
+    public void defineFromAdjacencyLists(ListaEnlazada<VertexObj<V,E>> vertices, ListaEnlazada<EdgeObj<V,E>> edges) {
+        this.secVertex = new ListaEnlazada<>();
+        this.secEdge = new ListaEnlazada<>();
+        this.isDirected = false;
+
+        for (VertexObj<V,E> v : vertices) {
+            this.insertVertex(v.getInfo());
+        }
+
+        for (EdgeObj<V,E> edge : edges) {
+            this.insertEdgeWeight(
+                edge.getEndVertex1().getInfo(),
+                edge.getEndVertex2().getInfo(),
+                edge.getWeight()
+            );
+        }
+    }
+
+    /**
+     * @param example Valor ejemplo para tipo de peso
+     * @return cero o null equivalente
+     */
+    @SuppressWarnings("unchecked")
+    private E zeroEquivalent(E example) {
+        if (example == null) return null;
+        if (example instanceof Number) {
+            return (E) Integer.valueOf(0);
+        }
+        return null;
+    }
+
+    /**
+     * Verifica si dos grafos son isomorfos, usando cantidad de vértices, aristas y secuencia de grados.
+     */
+    public boolean isIsomorphic(GraphListEdge<V, E> otherGraph) {
+        if (this.getVertexCount() != otherGraph.getVertexCount() ||
+            this.getEdgeCount() != otherGraph.getEdgeCount() ||
+            this.isDirected() != otherGraph.isDirected()) {
+            System.out.println("Los grafos no son isomorfos: diferencias en vértices, aristas o tipo.");
+            return false;
+        }
+
+        ListaEnlazada<Integer> thisDegrees = new ListaEnlazada<>();
+        for (VertexObj<V, E> v : this.secVertex) {
+            thisDegrees.insertLast(this.getNodeDegree(v.getInfo()));
+        }
+        thisDegrees.contains();
+
+        ListaEnlazada<Integer> otherDegrees = new ListaEnlazada<>();
+        for (VertexObj<V, E> v : otherGraph.secVertex) {
+            otherDegrees.insertLast(otherGraph.getNodeDegree(v.getInfo()));
+        }
+        otherDegrees.contains();
+
+        if (!thisDegrees.equals(otherDegrees)) { // asume equals compara contenido
+            System.out.println("Los grafos no son isomorfos: secuencia de grados diferente.");
+            return false;
+        }
+        System.out.println("Los grafos SON isomorfos (básico).");
+        return true; // Para simplificar, asumimos isomorfismo si secuencia coincide
+    }
+
+    /**
+     * Verifica planitud básica con regla de Euler y cantidad de vértices/aristas.
+     */
+    public boolean isPlanar() {
+        int v = getVertexCount();
+        int e = getEdgeCount();
+        if (v <= 4) return true;
+        if (e > 3 * v - 6) {
+            System.out.println("No es plano: más de 3v-6 aristas.");
+            return false;
+        }
+        System.out.println("Es plano por condición básica de Euler.");
+        return true;
+    }
+
+    /**
+     * Verifica conectividad usando BFS ignorando dirección.
+     */
+    public boolean isConnected() {
+        if (secVertex.length() == 0) return true;
+        VertexObj<V, E> start = secVertex.getClass(0);
+        ListaEnlazada<VertexObj<V, E>> visited = new ListaEnlazada<>();
+        Queue<VertexObj<V, E>> queue = new QueueLink<>();
+        queue.enqueue(start);
+        visited.insertLast(start);
+        while (!queue.isEmpty()) {
+            VertexObj<V, E> current = queue.dequeue();
+            ListaEnlazada<VertexObj<V, E>> neighbors = getNeighbors(current);
+            for (VertexObj<V, E> neighbor : neighbors) {
+                if (!visited.contains(neighbor)) {
+                    visited.insertLast(neighbor);
+                    queue.enqueue(neighbor);
+                }
+            }
+        }
+        return visited.length() == secVertex.length();
+    }
+
+    /**
+     * Verifica si el grafo es auto-complementario básicos con isomorfismo y condición n mod 4.
+     */
+    public boolean isSelfComplementary() {
+        int n = getVertexCount();
+        if (n % 4 != 0 && n % 4 != 1) {
+            System.out.println("No es auto-complementario: n mod 4 distinto de 0 o 1.");
+            return false;
+        }
+        GraphListEdge<V, E> complement = createComplement();
+        return this.isIsomorphic(complement);
+    }
+
+    // Crea complemento básico (sin peso) para isSelfComplementary
+    private GraphListEdge<V, E> createComplement() {
+        GraphListEdge<V, E> complement = new GraphListEdge<>(this.isDirected());
+        for (VertexObj<V, E> v : this.secVertex)
+            complement.insertVertex(v.getInfo());
+        for (VertexObj<V, E> v1 : this.secVertex) {
+            for (VertexObj<V, E> v2 : this.secVertex) {
+                if (!v1.equals(v2) && !this.searchEdge(v1.getInfo(), v2.getInfo())) {
+                    if (!complement.searchEdge(v1.getInfo(), v2.getInfo())) {
+                        complement.insertEdge(v1.getInfo(), v2.getInfo());
+                    }
+                }
+            }
+        }
+        return complement;
+    }
+
+
+ 
+
     /**
      * Verifica si un vértice está presente en una lista de vértices.
      * Método auxiliar para reemplazar el contains() que podría no existir.
